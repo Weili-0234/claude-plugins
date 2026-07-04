@@ -1,5 +1,6 @@
 {
   "name": "weili-claude-plugins",
+  "description": "Weili Xu's personal Claude Code plugins: ML-systems documentation and code-analysis skills.",
   "owner": {
     "name": "Weili Xu",
     "url": "https://github.com/Weili-0234"
