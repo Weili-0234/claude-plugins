@@ -1,0 +1,14 @@
+{
+  "name": "weili-claude-plugins",
+  "owner": {
+    "name": "Weili Xu",
+    "url": "https://github.com/Weili-0234"
+  },
+  "plugins": [
+    {
+      "name": "mlsys-code-walkthrough",
+      "source": "./mlsys-code-walkthrough",
+      "description": "Write rigorous ML-systems code walk-through tutorials (Awesome-ML-SYS-Tutorial style): trace key data structures through a lifecycle, function-by-function mutations, mermaid data-flow diagrams, Excalidraw hero figures, commit-pinned permalinks."
+    }
+  ]
+}
