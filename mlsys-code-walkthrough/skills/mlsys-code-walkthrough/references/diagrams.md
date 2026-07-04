@@ -138,6 +138,12 @@ stateDiagram-v2
 Transition labels are the *functions or conditions* that drive the change — this ties the
 diagram back to the lifecycle-tracing prose.
 
+**Never use a labeled self-loop** (`A --> A : re-polled each round`): mermaid renders a
+self-transition's label in the same space as the labels of the *other* transitions leaving
+that node, and they overlap illegibly. "The state persists / is re-polled / waits" is note
+material, not an edge — attach a `note right of A … end note` (as above) and keep the
+outgoing-edge labels short.
+
 ## Edge labels = the data that moves
 
 In a data-flow diagram, prefer edges that name the payload, so the picture itself answers
@@ -178,4 +184,14 @@ figure.)
 - **Diagram that contradicts the prose.** Generate the diagram from the same lifecycle trace
   you wrote; re-check node/function names against the pinned source.
 - **Mermaid syntax that won't render.** Keep node text in double quotes when it contains
-  punctuation/parentheses/CJK; avoid raw `<`/`>`/`#` inside labels.
+  punctuation/parentheses/CJK; avoid raw `<`/`>`/`#` inside labels. In `sequenceDiagram`
+  message/Note text, `;` is a statement separator and truncates the line — use an em-dash or
+  comma instead.
+- **Self-loop label collisions in `stateDiagram-v2`.** A labeled `A --> A : …` overlaps the
+  labels of other edges leaving `A`. Replace the self-loop with a `note` on the state
+  (Convention 4).
+- **Syntax-valid ≠ layout-valid.** A diagram that parses can still render with overlapping
+  labels, clipped notes, or crossing edges. Before committing, render every mermaid block
+  (kroki: `curl -s -X POST -H "Content-Type: text/plain" --data-binary @d.mmd
+  https://kroki.io/mermaid/svg -o d.svg`, or mmdc) and **look at the output** — the same
+  self-check loop excalidraw-plots.md mandates for drawn plots applies to mermaid.
