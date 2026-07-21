@@ -10,6 +10,11 @@
       "name": "mlsys-code-walkthrough",
       "source": "./mlsys-code-walkthrough",
       "description": "Write rigorous ML-systems code walk-through tutorials (Awesome-ML-SYS-Tutorial style): trace key data structures through a lifecycle, function-by-function mutations, mermaid data-flow diagrams, Excalidraw hero figures, commit-pinned permalinks."
+    },
+    {
+      "name": "resume-codex",
+      "source": "./resume-codex",
+      "description": "Resume work from a local OpenAI Codex session inside Claude Code: discovers Codex threads (state SQLite index + rollout JSONL under ~/.codex, grok-build's discovery contract ported), builds a bounded redacted continuity packet, reconciles it with the live repo before continuing."
     }
   ]
 }

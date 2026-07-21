@@ -1,0 +1,9 @@
+{
+  "name": "resume-codex",
+  "description": "Resume work from a local OpenAI Codex session inside Claude Code: discovers Codex threads via the state SQLite index and rollout JSONL files under ~/.codex (grok-build's foreign-session discovery contract, ported), builds a bounded redacted continuity packet, and reconciles it with the live repository before continuing.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Weili Xu",
+    "url": "https://github.com/Weili-0234"
+  }
+}

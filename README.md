@@ -7,6 +7,7 @@ Personal [Claude Code](https://code.claude.com) plugin marketplace.
 ```
 /plugin marketplace add Weili-0234/claude-plugins
 /plugin install mlsys-code-walkthrough@weili-claude-plugins
+/plugin install resume-codex@weili-claude-plugins
 ```
 
 ## Plugins
@@ -14,6 +15,7 @@ Personal [Claude Code](https://code.claude.com) plugin marketplace.
 | Plugin | What it does |
 |---|---|
 | [mlsys-code-walkthrough](./mlsys-code-walkthrough) | Skill for writing rigorous ML-systems code walk-through tutorials (Awesome-ML-SYS-Tutorial style): trace the key data structures through one lifecycle — which function touches which structure, tagged Allocate / Write / Update / Free — grounded in commit-pinned permalinks, with mermaid data-flow diagrams and programmatically-authored Excalidraw hero figures (generator kit + render + self-check loop included). |
+| [resume-codex](./resume-codex) | Skill for resuming work from a local OpenAI Codex session (CLI, Desktop, VS Code) inside Claude Code. Discovery contract ported from [grok-build](https://github.com/xai-org/grok-build)'s foreign-session scanner: highest-generation `state_<N>.sqlite` thread index first, `sessions/YYYY/MM/DD/rollout-*.jsonl[.zst]` scan as fallback, seconds/millis timestamp normalization, synthetic-turn filtering. Builds a bounded, secret-redacted continuity packet (goals, changed files, errors, transcript tail, recovered commands) and reconciles it with the live repo before continuing. |
 
 ## Layout
 
@@ -33,4 +35,10 @@ mlsys-code-walkthrough/
     templates/
       walkthrough-skeleton.md          #   article skeleton to copy
       excalidraw_kit.py                #   element builders for .excalidraw scenes
+resume-codex/
+  .claude-plugin/plugin.json           # plugin manifest
+  skills/resume-codex/
+    SKILL.md                           # entry point: workflow + discovery contract + safety rules
+    scripts/
+      codex_session.py                 #   list / resolve / resume CLI over ~/.codex session stores
 ```
