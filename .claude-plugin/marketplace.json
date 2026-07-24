@@ -1,6 +1,6 @@
 {
   "name": "weili-claude-plugins",
-  "description": "Weili Xu's personal Claude Code plugins: ML-systems documentation and code-analysis skills.",
+  "description": "Weili Xu's personal Claude Code plugins: ML-systems documentation, code-analysis, and session-productivity skills.",
   "owner": {
     "name": "Weili Xu",
     "url": "https://github.com/Weili-0234"
@@ -15,6 +15,11 @@
       "name": "resume-codex",
       "source": "./resume-codex",
       "description": "Resume work from a local OpenAI Codex session inside Claude Code: discovers Codex threads (state SQLite index + rollout JSONL under ~/.codex, grok-build's discovery contract ported), builds a bounded redacted continuity packet, reconciles it with the live repo before continuing."
+    },
+    {
+      "name": "handoff",
+      "source": "./handoff",
+      "description": "Write a self-contained handoff document when wrapping up or pausing a Claude Code session: verified status, done items, reproducible experiments/analyses, todos, decisions, pitfalls, and next steps — so another person or a future session can pick it up cleanly."
     }
   ]
 }
