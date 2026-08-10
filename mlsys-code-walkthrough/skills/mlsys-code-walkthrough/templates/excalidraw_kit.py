@@ -50,30 +50,46 @@ def rect(id, x, y, w, h, color="none", fill="solid", dash="solid", rounded=True)
 
 def _text_w(s, size):
     """Estimate rendered width. The hand font is wide; CJK glyphs are full-width.
-    Underestimating makes the export viewBox clip trailing characters."""
-    n_cjk = sum(1 for ch in s if ord(ch) > 0x2E7F)
-    return float(size * (0.75 * (len(s) - n_cjk) + 1.1 * n_cjk))
+    Underestimating makes the export viewBox clip trailing characters.
+    Multi-line text: width of the widest line."""
+    def line_w(line):
+        n_cjk = sum(1 for ch in line if ord(ch) > 0x2E7F)
+        return float(size * (0.75 * (len(line) - n_cjk) + 1.1 * n_cjk))
+
+    return max(line_w(line) for line in s.split("\n"))
 
 
-def label(id, x, y, s, size=16, color="#1e1e1e", family=1):
+def _text_h(s, size):
+    """Declared height must cover every line: kroki renders declared geometry
+    as-is (no re-layout), so a one-line height on a multi-line label makes the
+    text block spill across the container's top border (observed 2026-07)."""
+    return float(size * 1.3 * len(s.split("\n")))
+
+
+def label(id, x, y, s, size=16, color="#1e1e1e", family=2):
     """Free-floating text: container titles (top-left inside the box), legends,
-    annotations. family: 1=hand-drawn 2=sans 3=mono(code)."""
+    annotations. family: 2=sans (default; NEVER use 1 hand-drawn — it clashes with
+    code identifiers, user preference) 3=mono(code)."""
     return {
         "type": "text", "id": id, "x": float(x), "y": float(y),
-        "width": _text_w(s, size), "height": float(size * 1.3),
+        "width": _text_w(s, size), "height": _text_h(s, size),
         "text": s, "fontSize": size, "fontFamily": family,
         "strokeColor": color, "textAlign": "left", "verticalAlign": "top",
         "roughness": 1, "opacity": 100, "seed": _s(), "groupIds": [],
     }
 
 
-def bind_text(container, id, s, size=16, color="#1e1e1e", family=1):
+def bind_text(container, id, s, size=16, color="#1e1e1e", family=2):
     """Centered text INSIDE a container (or inline on an arrow). Mutates the
-    container's boundElements; excalidraw auto-centers on render."""
+    container's boundElements. x/y/height are pre-centered here because kroki
+    renders the declared geometry as-is (excalidraw.com re-centers on load,
+    kroki does not) — see _text_h."""
+    w, h = _text_w(s, size), _text_h(s, size)
     t = {
         "type": "text", "id": id,
-        "x": container["x"] + 8.0, "y": container["y"] + 8.0,
-        "width": _text_w(s, size), "height": float(size * 1.3),
+        "x": container["x"] + (container["width"] - w) / 2.0,
+        "y": container["y"] + (container["height"] - h) / 2.0,
+        "width": w, "height": h,
         "text": s, "fontSize": size, "fontFamily": family,
         "strokeColor": color, "textAlign": "center", "verticalAlign": "middle",
         "roughness": 1, "opacity": 100, "seed": _s(), "groupIds": [],

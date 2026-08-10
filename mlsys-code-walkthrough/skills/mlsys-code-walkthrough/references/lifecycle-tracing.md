@@ -27,11 +27,11 @@ structure it touches — each with a verb and a concrete number from the running
 
 ```markdown
 ##### Step 1. Function `get_new_batch_prefill`
-- 从 radix tree 更新 prefix（`match_prefix` 命中 `A`，节点分裂为 `A` 和 `FG`）
-- 调用 `prepare_for_extend`：
-  - `req_to_token_pool`：**Allocate** `req_pool_indices`，写入 prefix
-  - `token_to_kv_pool`：**Allocate** Σ(input_id 数 − prefix 数) 个 `out_cache_loc`
-    - 例子里请求 `ABC`，batch size = 1：input = 3 (A,B,C)，prefix = 1 (A)，故为 token B、C 分配 2 个 slot
+- Update the prefix from the radix tree (`match_prefix` hits `A`; the node splits into `A` and `FG`)
+- Call `prepare_for_extend`:
+  - `req_to_token_pool`: **Allocate** `req_pool_indices`, write the prefix
+  - `token_to_kv_pool`: **Allocate** Σ(#input_ids − #prefix) `out_cache_loc` entries
+    - In the example, request `ABC`, batch size = 1: input = 3 (A,B,C), prefix = 1 (A), so 2 slots are allocated for tokens B and C
 ```
 
 Use `#####` for steps under a `####` phase (Prefill / Decode), and make the function name a
@@ -45,13 +45,13 @@ naming each component, the function called, and the data-structure transformatio
 hop. This is the article's spine; everything after it is zoom-in. The request walk-through's
 spine (abridged, reproduce this shape):
 
-> 5. Scheduler 在 `event_loop_normal` 中处理请求：
->    - 通过 `recv_requests` 接收，`process_input_requests` 处理，`handle_generate_request` 加入 `waiting_queue`
->    - 从 `waiting_queue` 用 `get_next_batch_to_run` 创建 `ScheduleBatch`
->    - `run_batch` 把 `ScheduleBatch` 转成 `ModelWorkerBatch`
->    - 调 TpModelWorker 的 `forward_batch_generation`，等待 `logits_output` 与 `next_token_ids`
->    - TpModelWorker 初始化 `ForwardBatch` 转发给 ModelRunner……
->    - `process_batch_result` 处理结果，`cache_finished_req` 缓存完成的请求……
+> 5. The Scheduler processes requests in `event_loop_normal`:
+>    - receives via `recv_requests`, processes via `process_input_requests`, and `handle_generate_request` adds them to the `waiting_queue`
+>    - builds a `ScheduleBatch` from the `waiting_queue` via `get_next_batch_to_run`
+>    - `run_batch` turns the `ScheduleBatch` into a `ModelWorkerBatch`
+>    - calls TpModelWorker's `forward_batch_generation`, awaiting `logits_output` and `next_token_ids`
+>    - TpModelWorker initializes a `ForwardBatch` and forwards it to the ModelRunner…
+>    - `process_batch_result` handles the results; `cache_finished_req` caches finished requests…
 
 Notice every line is `<component> <function> <data-structure transition>`. That triplet is
 the unit. The reader can navigate the rest of the article from this list alone.
@@ -63,13 +63,13 @@ prefill vs decode, finished vs unfinished), lay them side by side: **rows = the 
 operations, columns = the variants, bold the divergence.** From the KV-cache article:
 
 ```markdown
-| 步骤 | `cache_unfinished_req` | `cache_finished_req` |
+| Step | `cache_unfinished_req` | `cache_finished_req` |
 |------|--------------------------|--------------------------|
-| 1. 从 `req_to_token_pool` 取 `kv_indices` | - | - |
-| 2. 更新 Radix Cache (`insert()`) | - | - |
-| 3. 释放 KV Cache (`token_to_kv_pool.free()`) | - | 释放重复的 KV 存储 |
-| 4. 处理 `req_to_token_pool` | **写入并更新** | **释放**（请求已完成） |
-| 5. 处理 `req.last_node` | **增加**引用计数 | **减少**引用计数（请求已完成） |
+| 1. Take `kv_indices` from `req_to_token_pool` | - | - |
+| 2. Update Radix Cache (`insert()`) | - | - |
+| 3. Free KV Cache (`token_to_kv_pool.free()`) | - | frees the duplicated KV storage |
+| 4. Handle `req_to_token_pool` | **write + update** | **free** (request finished) |
+| 5. Handle `req.last_node` | **increment** refcount | **decrement** refcount (request finished) |
 ```
 
 This single table conveys more than two paragraphs of prose, and the bolded cells point the
@@ -80,15 +80,15 @@ eye straight at what actually differs.
 When the lifecycle is a training step or a weight sync spanning processes, the same method
 applies, with three additions.
 
-### 1. The call-chain ("串联关系") section, early
+### 1. The call-chain section, early
 
 Before deep dives, give the layered call chain so the reader sees who drives whom. slime's
 form (reproduce this shape — layer → functions → effect):
 
-> 1. 脚本层（`scripts/`）：启动 Ray → 提交 job → 选择 `train.py`/`train_async.py`
-> 2. 入口层（`train*.py`）：`create_placement_groups` 分配 GPU；`create_actor_group` 构建训练 Actor 组；`create_rollout_manager` 构建推理/数据生成管理器
-> 3. 执行层（`ray/`+`backends/`）：`actor_group.async_train(...)` → Megatron 梯度计算；`rollout_manager.async_generate(...)` → SGLang 批量推理；`actor_group.async_update_weights()` → 将训练权重推送到推理引擎
-> 4. 数据流（`buffer.py`）：`Buffer` 抽样/拼批/调用生成 → 返回训练样本
+> 1. Script layer (`scripts/`): start Ray → submit the job → pick `train.py`/`train_async.py`
+> 2. Entry layer (`train*.py`): `create_placement_groups` allocates GPUs; `create_actor_group` builds the training actor group; `create_rollout_manager` builds the inference/data-generation manager
+> 3. Execution layer (`ray/`+`backends/`): `actor_group.async_train(...)` → Megatron gradient computation; `rollout_manager.async_generate(...)` → SGLang batch inference; `actor_group.async_update_weights()` → pushes trained weights to the inference engine
+> 4. Data flow (`buffer.py`): `Buffer` samples/batches/invokes generation → returns training samples
 
 ### 2. The data-object growth chain (pop / union)
 
@@ -124,9 +124,11 @@ order — skipping the third (side effects) is the most common gap:
    layout.)
 3. **The side effects that MUST follow** — and *why*. The KV cache must be flushed because
    parameters changed and old KV is now invalid; the radix tree still indexes stale entries:
-   > 在 KV cache 被 release 之后，tensor 仍保留，只是 virtual address 映射的物理内存被释放；与此
-   > 同时 radix tree 仍索引着整个 KV cache。当 resume 之后物理内存上的旧 KV 已不存在，且模型参数也
-   > 被更新——出于这两点，一定要用 flush cache 接口刷新 radix tree 索引。
+   > After the KV cache is released, the tensors remain but the physical memory backing
+   > their virtual addresses is freed; meanwhile the radix tree still indexes the whole KV
+   > cache. After resume, the old KV in physical memory is gone AND the model parameters
+   > have been updated — for both reasons, the radix tree index must be refreshed through
+   > the flush-cache interface.
 
    Other side effects to watch for: version-number bump, the lock that prevents concurrent
    rollout and weight broadcast, resume/pause of the inference engine.

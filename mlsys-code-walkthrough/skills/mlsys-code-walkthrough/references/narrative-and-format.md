@@ -25,9 +25,13 @@ dump "five constraints" as a flat table and move on — thread them: introduce a
 where the mechanism forces it, then later "this is exactly the pointer-stability constraint
 from §1." Section transitions must reference a specific prior result or open question:
 
-- Good: "上一节确立了 `out_cache_loc` 同时是第一个池的返回值和第二个池的索引；这一节看它在 prefill 时如何被分配。"
-- Good: "回顾 spine 第 5 步 `run_batch` 把 `ScheduleBatch` 转成 `ModelWorkerBatch`——这一步具体改了哪些字段？"
-- Bad: "有了这些基础，我们来看……" / "接下来讨论……" (carry no derivation).
+- Good: "The previous section established that `out_cache_loc` is both the first pool's
+  return value and the second pool's index; this section follows how it gets allocated
+  during prefill."
+- Good: "Recall spine step 5, where `run_batch` turns a `ScheduleBatch` into a
+  `ModelWorkerBatch` — which fields does it actually rewrite?"
+- Bad: "With these foundations in place, let's look at…" / "Next we discuss…" (carry no
+  derivation).
 
 ## The driving question
 
@@ -37,14 +41,16 @@ used, and freed across prefill and decode?"). Every later section visibly serves
 
 ## Heading hierarchy
 
-- `#` — article title (once). Bilingual is fine: `# SGLang 后端代码解析`.
-- `##` — one per component/stage/phase. Title bilingually: `## 中文描述 (English Description)`,
-  e.g. `## Scheduler 接收请求以及处理批次 (Scheduler Receive Requests and Process Batches)`.
+- `#` — article title (once), in English: `# SGLang Backend Code Walk-through`.
+- `##` — one per component/stage/phase, titled in English:
+  `## Scheduler Receives Requests and Processes Batches`. (The Chinese mirror may title
+  bilingually: `## 中文描述 (English Description)`.)
 - `###` — one per function; **the heading text IS a GitHub permalink** to that function.
-  Join two related functions with ` 和 `: `### [forward_extend](url) 和 [forward_decode](url)`.
+  Join two related functions with ` and `: `### [forward_extend](url) and [forward_decode](url)`.
 - `#####` — lifecycle steps inside a phase (`##### Step 1. Function \`get_new_batch_prefill\``).
 - Group engineering challenges that stem from one design decision under a single `##`, each
-  as a `###` whose title encodes the constraint it answers ("避免动态内存分配").
+  as a `###` whose title encodes the constraint it answers ("Avoiding dynamic memory
+  allocation").
 
 ## Code citation rhythm
 
@@ -52,13 +58,13 @@ Pin ONE commit for the whole article. Every link is
 `https://github.com/<org>/<repo>/blob/<commit>/<path>#L<start>-L<end>`. Never link `main`.
 The rhythm around a code block:
 
-1. **Source + purpose sentence**: "对应源码在 [`model_runner_kv_cache_mixin.py`](permalink)：" — name where it is and what it does, in one sentence.
-2. **The code block**, language-tagged. For long bodies, wrap in `<details><summary>…源码</summary>` so the main line stays readable — this is the repo's universal container for full function bodies.
+1. **Source + purpose sentence**: "The source is in [`model_runner_kv_cache_mixin.py`](permalink):" — name where it is and what it does, in one sentence.
+2. **The code block**, language-tagged. For long bodies, wrap in `<details><summary>…source</summary>` so the main line stays readable — this is the repo's universal container for full function bodies.
 3. **Numbered step-by-step analysis** below it, in execution order, tying each step to the data-structure effect.
 
 A lighter alternative for incidental functions: skip the permalink and use an inline
-parenthetical — "...写入 KV cache（函数 `save_kv_cache`）". Use sparingly; prefer permalinks for
-anything on the lifecycle spine.
+parenthetical — "…writes the KV cache (function `save_kv_cache`)". Use sparingly; prefer
+permalinks for anything on the lifecycle spine.
 
 ## Format conventions
 
@@ -78,16 +84,52 @@ anything on the lifecycle spine.
 ## Series / multi-part
 
 Large subsystems split into parts (`readme.md`, `readme-2.md`, …) or sections of one doc.
-Open each part by recalling the previous part's result and stating this part's scope ("在
-[Part 1](readme.md) 中我们介绍了初始化，本篇进入训练过程"), and cross-link specific anchors.
+Open each part by recalling the previous part's result and stating this part's scope
+("[Part 1](readme.md) covered initialization; this part enters the training loop"), and
+cross-link specific anchors.
 
 ## Language
 
-Chinese-first prose; technical terms stay in English (`ScheduleBatch`, prefill, radix tree,
-KV cache, TP — never force a translation); no space between Chinese and English. Code and
-code comments stay in their original language. Produce `readme-en.md` only on request, with
-headings/lists/tables/code/blockquotes/image-positions strictly mirroring the Chinese, and
-internal `.md` links switched to their English counterparts.
+English-first prose. Code and code comments stay in their original language. **All figure
+text is English-only**: mermaid node/edge labels, Excalidraw box/arrow/legend labels, and
+any svg/png export. There is exactly one set of figure files per article.
+
+### The Chinese mirror (`readme-CN.md`) — conditional subagent contract
+
+Produce `readme-CN.md` ONLY when the user's request is in Chinese or mixes Chinese and
+English. For English-only requests, do not create a Chinese version at all.
+
+When triggered: after the English `readme.md` is finished and self-checked, fan out a
+subagent to write `readme-CN.md` next to it; on every later revision of `readme.md`,
+re-run the subagent to update the mirror. Give the subagent this contract:
+
+- **Strict structural mirror**: same headings (the `##` titles may be bilingual
+  `## 中文描述 (English Description)`), lists, tables, code blocks, blockquotes, and image
+  positions as the English version, 1:1.
+- **Translate prose only.** Technical terms stay in English (`ScheduleBatch`, prefill,
+  radix tree, KV cache, TP — never force a translation); no space between Chinese and
+  English. Code and code comments are NOT translated.
+- **Figures are shared, never re-drawn**: embed the SAME image paths the English version
+  uses (labels stay English). Do not create `_zh`/`_CN` figure variants.
+- **Links**: internal `.md` cross-links switch to their Chinese counterparts when one
+  exists; commit-pinned external URLs carry over unchanged.
+- The vocabulary rule below binds the mirror too: no coined Chinese abstractions, and no
+  Chinese coinages replacing the code's English terms.
+
+**Vocabulary comes from the codebase, never from you.** Unless the codebase literally has a
+keyword called xxxx (grep identifiers, docstrings, comments to check), you may not coin
+xxxx as a new abstraction — in either language. Two failure modes observed in practice
+(2026-07 user feedback):
+
+- *Invented metaphor*: calling an admitted external execution a "lease/租约" when the code
+  only ever says "holding its dispatch slot" + "reap deadline" — the reader greps the repo
+  for the article's words and finds nothing.
+- *Awkward Chinese coinage for an existing English term*: 槽位 for slot, 托管 for held
+  results. Keep the code's English term verbatim inside Chinese prose (dispatch slot,
+  held results, custody debt, inferred chain edge, born terminal, eviction seam...).
+
+If the mechanism genuinely has no name in the code, don't name it — describe it in one
+plain sentence composed of the code's own words (quote the docstring if one exists).
 
 ## KEEP vs DROP (technical-structural voice)
 
@@ -117,10 +159,17 @@ matters* is fine; a personal story is not.
 - [ ] Every lifecycle step tags a verb (Allocate/Write/Update/No change/Free) + a worked number?
 - [ ] Sibling functions in a comparison table with the divergence bolded?
 - [ ] Cross-component: ownership, boundary object, and side-effects (e.g. flush_cache) all covered?
-- [ ] Diagrams are mermaid (no ASCII); overview edges labeled with the data that flows?
-- [ ] Drawn plots (if any): one semantic color axis + legend, render self-checked, and the
-      `.excalidraw` source committed next to the export?
+- [ ] Figures are drawn Excalidraw plots rendered to svg/png (no ASCII; mermaid only if
+      the user explicitly asked); data-flow edges/arrows labeled with the data that flows?
+- [ ] Drawn plots: one semantic color axis + legend, render self-checked, the
+      `.excalidraw` source committed next to the export, and ALL figure text in English
+      (mermaid labels included, if mermaid was requested)?
+- [ ] If the user asked in Chinese or mixed Chinese-English: `readme-CN.md` fanned out to /
+      updated by a subagent, strictly mirroring the English structure and embedding the
+      SAME English-labeled figure files? (Skipped entirely for English-only requests.)
 - [ ] One pinned commit; every `###` function heading is a permalink with line range?
-- [ ] Transitions reference a specific prior result, not "有了这些基础"?
+- [ ] Transitions reference a specific prior result, not "with these foundations in place"?
 - [ ] Implementation claims verified against the pinned source?
+- [ ] Every concept word in the article greps in the codebase? (No coined abstractions —
+      lease/租约-class metaphors — and no Chinese coinages replacing the code's English terms?)
 - [ ] Personal-blog flourishes removed; lead is driving-question + roadmap?

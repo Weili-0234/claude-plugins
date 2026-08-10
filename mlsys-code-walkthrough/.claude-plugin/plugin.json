@@ -1,7 +1,7 @@
 {
   "name": "mlsys-code-walkthrough",
-  "description": "Write rigorous ML-systems code walk-through tutorials in the Awesome-ML-SYS-Tutorial style: pick a lifecycle (a request, a training step, a weight update), find the 3-6 data structures that carry state across it, and walk it stage by stage with Allocate/Write/Update/Free mutations, mermaid data-flow diagrams, Excalidraw hero figures, and commit-pinned source permalinks. Targets SGLang, vLLM, slime, verl, Megatron, and similar ML-systems repos.",
-  "version": "0.1.1",
+  "description": "Write rigorous ML-systems code walk-through tutorials in the Awesome-ML-SYS-Tutorial style: pick a lifecycle (a request, a training step, a weight update), find the 3-6 data structures that carry state across it, and walk it stage by stage with Allocate/Write/Update/Free mutations, drawn Excalidraw/SVG figures by default (mermaid on request), English-first prose with an optional subagent-maintained Chinese mirror, and commit-pinned source permalinks. Targets SGLang, vLLM, slime, verl, Megatron, and similar ML-systems repos.",
+  "version": "0.2.0",
   "author": {
     "name": "Weili Xu",
     "url": "https://github.com/Weili-0234"

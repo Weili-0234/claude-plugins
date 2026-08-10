@@ -1,11 +1,13 @@
 # Drawn architecture plots (Excalidraw): author, render, self-check
 
-Mermaid stays the default (`diagrams.md`). But the repo's best walk-throughs anchor on a
-few **drawn plots** that mermaid cannot express — the hero architecture figure in
-`sglang/code-walk-through/sglang_scheduler.svg` (an Excalidraw export), the Excalidraw
-diagrams in `rlhf/verl/multi-turn/imgs/agentLoop.png` and `rlhf/areal/areal_overview.jpg`,
-and the FlexKV-style figures this reference codifies. You CAN draw these yourself: author
-an `.excalidraw` JSON scene, render it, look at the render, fix it, commit source + image.
+**Drawn plots are the DEFAULT figure type** — every figure (data flow, sequence, state,
+hero architecture) is an Excalidraw plot rendered to svg/png, unless the user explicitly
+asks for mermaid (then see `diagrams.md`). The repo's best walk-throughs anchor on drawn
+plots — the hero architecture figure in `sglang/code-walk-through/sglang_scheduler.svg`
+(an Excalidraw export), the Excalidraw diagrams in `rlhf/verl/multi-turn/imgs/agentLoop.png`
+and `rlhf/areal/areal_overview.jpg`, and the FlexKV-style figures this reference codifies.
+You CAN draw these yourself: author an `.excalidraw` JSON scene, render it, look at the
+render, fix it, commit source + image.
 
 The repo's own history says this matters twice over: (a) authors repeatedly wrote mermaid
 first and later replaced it with a styled static figure (see the `mermaid-redraw/` commits
@@ -13,19 +15,26 @@ in `sglang/sglang-omni`), so the drawn plot is where good articles end up; (b) t
 contains **zero** editable diagram sources — every existing PNG is terminal. Committing the
 `.excalidraw` next to the exported image fixes that.
 
-## When to draw a plot instead of (or on top of) mermaid
+## Which idiom for which job
 
-| signal | use |
+Every figure defaults to a drawn plot; mermaid appears only when the user explicitly asks
+(`diagrams.md`). Pick the drawn-plot idiom by job:
+
+| job | idiom |
 |---|---|
-| flow / sequence / state, structure is the content | mermaid (default) |
+| data flow / component overview (who passes what to whom) | drawn plot: nested containers + payload-labeled arrows |
 | hero architecture: nested containers ≥2 levels + semantic colors | drawn plot |
 | numbered data paths ① ② ③ with a payload legend (FlexKV pattern) | drawn plot |
+| cross-component call + data exchange over time, async, threads | drawn plot (sequence layout) |
+| one object/structure moving through states | drawn plot (state layout) |
 | replica / parallelism topology (× tp_size, × dp, N workers) | drawn plot (stack idiom) |
 | CPU–GPU timeline, box width ∝ duration, sync points | drawn plot (timeline idiom) |
 | memory / slot-grid layout (token→slot mapping) | drawn plot or markdown table |
 
-Budget: **one, maybe two drawn plots per article** (the hero overview + at most one
-zoom-in); everything else stays mermaid so it renders inline and diffs cleanly.
+Budget: drawn plots cost more than mermaid, so stay disciplined — an overview plus
+per-section figures as the narrative demands, each with committed `.excalidraw` source and
+a self-checked render. Comparisons still go in markdown tables, linear paths in numbered
+lists.
 
 ## The visual grammar (style contract)
 
@@ -51,12 +60,13 @@ so figures across articles look like one family.
    an inline bound label (`bind_text(arrow, ...)` → `-- ModelWorkerBatch -->`) or, when
    labels would clutter, a circled number (`num_badge()`) resolved in a legend:
    `① put/get: tokenlists, freeBlocksRequest`. The prose then either walks the numbers in
-   order ("下图中 ① 时…，在 ② 时…" — `zero-overhead-batch-scheduler.md:133`) or, for a
-   lifecycle spine, uses numbered `#####` step headers that map 1:1 onto the diagram's
-   stages with backreferences ("在上图的例子中，Request `ABC`…" — the
+   order ("at ① in the figure below…, at ②…" — the `zero-overhead-batch-scheduler.md:133`
+   pattern) or, for a lifecycle spine, uses numbered `#####` step headers that map 1:1 onto
+   the diagram's stages with backreferences ("in the example above, request `ABC`…" — the
    kvcache-code-walk-through pattern). When prose must decode a color/line style, the repo
-   convention is an inline bolded phrase ("上图中**红色虚线**代表…"), never a standalone
-   "Legend:" paragraph — the printed legend belongs inside the figure.
+   convention is an inline bolded phrase ("in the figure above, the **red dashed line**
+   means…"), never a standalone "Legend:" paragraph — the printed legend belongs inside
+   the figure.
 4. **Replicas.** N instances of a component = the `stack()` idiom: 2 offset dashed ghost
    boxes behind one solid box, annotated `× tp_size` / `× config.num_workers`
    (`agentLoop.png` uses exactly this with a brace).
@@ -64,9 +74,11 @@ so figures across articles look like one family.
    one row per executor (CPU / GPU / CPU-S / CPU-L), boxes left→right on an implicit time
    axis, box width ∝ duration, thin arrows CPU-op → GPU-kernel it launches, red dashed
    vertical line = sync point, dashed empty box = step skipped in the optimized variant.
-6. **Type.** fontFamily 1 (hand-drawn; CJK falls back to the embedded Xiaolai font — 中文
-   直接可用) for everything except code identifiers where `family=3` (mono) is fine.
-   Sizes: 18 container titles, 16 box labels, 14 arrow labels/badges, 15 legend.
+6. **Type.** fontFamily 2 (normal sans) for ALL text — NEVER fontFamily 1 (the hand-drawn
+   font): it clashes badly with code identifiers like `_finalize` (user preference,
+   2026-07). `family=3` (mono) is acceptable for code identifiers. All figure text is
+   English-only (see §7). Sizes: 18 container titles, 16 box labels, 14 arrow
+   labels/badges, 15 legend.
 
 ## Authoring workflow
 
@@ -111,9 +123,13 @@ Work in a scratch dir; the deliverables that get committed are
    required — real alt text, not `alt text` placeholders. For figure-heavy articles the
    numbered-caption variant is the tts-optimization convention:
    `<div align="center"><img src="images/x.svg" alt="..." width="70%"><p><em>Figure 1. …</em></p></div>`.
-   Keep the `.excalidraw` in the same `images/` dir as the rendered file. A translated
-   (`readme-en.md`) version reuses the SAME image files and paths — never re-draw per
-   language; only captions/prose change.
+   Keep the `.excalidraw` in the same `images/` dir as the rendered file.
+7. **English-only figures, one file set shared by every language edition.** Author each
+   figure once, with ALL natural-language labels in English (code identifiers are
+   language-neutral anyway). The Chinese mirror (`readme-CN.md`) embeds the SAME
+   `<fig>.svg`/`.png` files and paths — never re-draw, re-label, or maintain per-language
+   variants (`_zh`/`_en` exports). One English-labeled set beats keeping two in sync
+   (user decision, 2026-08; supersedes the 2026-07 per-language-exports rule).
 
 ## Raw element schema (when not using the kit)
 
@@ -158,5 +174,5 @@ element fields on load; what you must get right:
   (or the generator script) and re-render. Commit both, always — this repo's 204 existing
   PNGs have no recoverable sources.
 - **Redrawing a paper figure without credit.** If the plot adapts a figure from a paper or
-  blog, link the source in prose right at the figure ("来源：[…](url)" — the
+  blog, link the source in prose right at the figure ("Source: […](url)" — the
   `sglang-omni/README.md:622` convention); a watermark baked into pixels is not a citation.
