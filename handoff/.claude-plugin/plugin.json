@@ -1,7 +1,7 @@
 {
   "name": "handoff",
   "description": "Write a self-contained handoff document when wrapping up or pausing a Claude Code session, so another person or a future session with no memory of this one can pick it up cleanly: verified status, done items, reproducible experiments/analyses, todos, decisions, pitfalls, and next steps.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "Weili Xu",
     "url": "https://github.com/Weili-0234"

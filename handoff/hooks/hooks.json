@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLAUDE_HANDOFF_TOKENS=${CLAUDE_HANDOFF_TOKENS:-600000} python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/context-handoff-check.py\" 2>/dev/null || true",
+            "timeout": 15,
+            "statusMessage": "Checking context size for handoff threshold"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.session_id' | { read -r s; rm -f \"${CLAUDE_HANDOFF_SENTINEL_DIR:-/tmp}/claude-handoff-fired-$s\"; } 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
